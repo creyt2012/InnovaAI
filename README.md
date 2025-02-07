@@ -1,7 +1,7 @@
 # InnovaAI Studio Manager
 
 <p align="center">
-  <img src="https://github.com/creyt2012/InnovaAI/blob/main/logo-search-grid-2x.png" alt="InnovaAI Studio Manager Logo" width="200"/>
+  <img src="https://github.com/creyt2012/InnovaAI/blob/main/logo-search-grid.png" alt="InnovaAI Studio Manager Logo" width="200"/>
 </p>
 
 <p align="center">
