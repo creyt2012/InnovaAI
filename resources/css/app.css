@@ -1,0 +1,190 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+@import 'highlight.js/styles/github-dark.css';
+
+@layer base {
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 240 10% 3.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 240 10% 3.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 240 10% 3.9%;
+        --primary: 201 96% 32%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 240 4.8% 95.9%;
+        --secondary-foreground: 240 5.9% 10%;
+        --muted: 240 4.8% 95.9%;
+        --muted-foreground: 240 3.8% 46.1%;
+        --accent: 240 4.8% 95.9%;
+        --accent-foreground: 240 5.9% 10%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 240 5.9% 90%;
+        --input: 240 5.9% 90%;
+        --ring: 201 96% 32%;
+        --radius: 0.75rem;
+    }
+
+    .dark {
+        --background: 240 10% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 240 10% 3.9%;
+        --card-foreground: 0 0% 98%;
+        --popover: 240 10% 3.9%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 201 96% 32%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 240 3.7% 15.9%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 240 3.7% 15.9%;
+        --muted-foreground: 240 5% 64.9%;
+        --accent: 240 3.7% 15.9%;
+        --accent-foreground: 0 0% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 240 3.7% 15.9%;
+        --input: 240 3.7% 15.9%;
+        --ring: 201 96% 32%;
+    }
+
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    }
+}
+
+@layer components {
+    .btn {
+        @apply inline-flex items-center px-4 py-2 border rounded-md font-semibold text-xs uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-offset-2 transition ease-in-out duration-150;
+    }
+
+    .btn-primary {
+        @apply bg-primary text-primary-foreground hover:bg-primary/90;
+    }
+
+    .btn-secondary {
+        @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+    }
+
+    .btn-danger {
+        @apply bg-destructive text-destructive-foreground hover:bg-destructive/90;
+    }
+
+    .glass-panel {
+        @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border border-gray-200 dark:border-gray-700;
+    }
+    
+    .elegant-shadow {
+        @apply shadow-elegant dark:shadow-none;
+    }
+
+    .glass-button {
+        @apply px-4 py-2 bg-white/20 dark:bg-gray-800/20 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 
+               rounded-lg shadow-glass hover:bg-white/30 dark:hover:bg-gray-800/30 
+               transition-all duration-300 ease-out;
+    }
+
+    .gradient-border {
+        @apply relative before:absolute before:inset-0 before:-z-10 before:p-[1px] 
+               before:bg-gradient-to-r before:from-primary-300 before:to-primary-500
+               before:rounded-[inherit] before:opacity-0 hover:before:opacity-100
+               before:transition-opacity;
+    }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    @apply w-2;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-gray-200 dark:bg-gray-700 rounded-full 
+           hover:bg-gray-300 dark:hover:bg-gray-600 
+           transition-colors duration-200;
+}
+
+/* Message Animations */
+.message-enter-active,
+.message-leave-active {
+    @apply transition-all duration-300 ease-out;
+}
+
+.message-enter-from {
+    @apply opacity-0 -translate-y-4;
+}
+
+.message-leave-to {
+    @apply opacity-0 translate-y-4;
+}
+
+/* Elegant Input Styling */
+.elegant-input {
+    @apply w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 
+           border border-gray-200 dark:border-gray-700
+           rounded-lg focus:ring-2 focus:ring-primary-500/20 
+           focus:border-primary-500 dark:focus:border-primary-400
+           transition-all duration-200;
+}
+
+/* Modern Card Styling */
+.modern-card {
+    @apply bg-white dark:bg-gray-800 rounded-2xl p-6 
+           shadow-soft-xl dark:shadow-none
+           border border-gray-100 dark:border-gray-700/50
+           hover:shadow-soft-2xl hover:scale-[1.02]
+           transition-all duration-300;
+}
+
+/* Custom styles */
+.prose {
+  @apply max-w-none;
+}
+
+.prose pre {
+  @apply bg-gray-50 p-4 rounded-lg my-4;
+}
+
+.prose code {
+  @apply text-pink-600 text-sm;
+}
+
+.prose pre code {
+  @apply text-inherit;
+}
+
+/* Scrollbar styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+} 
