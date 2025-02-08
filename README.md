@@ -243,4 +243,6 @@ Bây giờ, bạn có thể truy cập API từ máy khác qua `http://<IP>:8080
 Mở setting admin project Lavarel và bạn đã có thể thêm các nodes API LM STUDIO
 
 Dự án đã sẵn sàng tích hợp với LM Studio API! 🚀
+![GitHub All Releases](https://img.shields.io/github/downloads/{creyt2012}/{InnovaAI}/total)
+
 
