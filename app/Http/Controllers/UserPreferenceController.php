@@ -2,43 +2,47 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AiModel;
-use App\Models\User;
+use App\Models\UserPreference;
 use Illuminate\Http\Request;
 
 class UserPreferenceController extends Controller
 {
-    public function updateModel(Request $request)
+    public function update(Request $request)
     {
         $validated = $request->validate([
-            'model_id' => 'required|exists:ai_models,id'
+            'theme' => 'required|in:light,dark',
+            'language' => 'required|in:vi,en',
+            'font_size' => 'required|in:small,medium,large',
+            'notification_enabled' => 'boolean',
+            'keyboard_shortcuts' => 'array',
+            'display_mode' => 'required|in:default,compact,comfortable'
         ]);
 
-        $user = $request->user();
-        $user->update([
-            'preferred_model_id' => $validated['model_id']
-        ]);
+        $preference = UserPreference::updateOrCreate(
+            ['user_id' => auth()->id()],
+            $validated
+        );
 
         return response()->json([
-            'message' => 'Model preference updated successfully'
+            'message' => 'Preferences updated successfully',
+            'preferences' => $preference
         ]);
     }
 
-    public function updateParameters(Request $request)
+    public function show()
     {
-        $validated = $request->validate([
-            'temperature' => 'required|numeric|min:0|max:2',
-            'max_length' => 'required|integer|min:100|max:4000',
-            'top_p' => 'required|numeric|min:0|max:1'
-        ]);
+        $preferences = UserPreference::firstOrCreate(
+            ['user_id' => auth()->id()],
+            [
+                'theme' => 'light',
+                'language' => 'vi',
+                'font_size' => 'medium',
+                'notification_enabled' => true,
+                'keyboard_shortcuts' => null,
+                'display_mode' => 'default'
+            ]
+        );
 
-        $user = $request->user();
-        $user->update([
-            'model_parameters' => $validated
-        ]);
-
-        return response()->json([
-            'message' => 'Model parameters updated successfully'
-        ]);
+        return response()->json($preferences);
     }
 } 

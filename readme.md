@@ -1,4 +1,3 @@
-
 # LM Studio Manager
 
 <p align="center">
