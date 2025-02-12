@@ -1,0 +1,74 @@
+{
+    "getting-started": {
+        "title": "Getting Started",
+        "children": [
+            {
+                "title": "Introduction",
+                "slug": "index"
+            },
+            {
+                "title": "Quick Start",
+                "slug": "quick-start"
+            },
+            {
+                "title": "Installation",
+                "slug": "installation"
+            }
+        ]
+    },
+    "features": {
+        "title": "Features",
+        "children": [
+            {
+                "title": "Chat Interface",
+                "slug": "chat"
+            },
+            {
+                "title": "Voice Chat",
+                "slug": "voice-chat"
+            },
+            {
+                "title": "File Sharing",
+                "slug": "file-sharing"
+            },
+            {
+                "title": "OCR",
+                "slug": "ocr"
+            }
+        ]
+    },
+    "plugins": {
+        "title": "Using Plugins",
+        "children": [
+            {
+                "title": "Plugin Overview",
+                "slug": "plugins"
+            },
+            {
+                "title": "Installing Plugins",
+                "slug": "installing-plugins"
+            },
+            {
+                "title": "Popular Plugins",
+                "slug": "popular-plugins"
+            }
+        ]
+    },
+    "account": {
+        "title": "Account Management",
+        "children": [
+            {
+                "title": "Profile Settings",
+                "slug": "profile"
+            },
+            {
+                "title": "Subscription",
+                "slug": "subscription"
+            },
+            {
+                "title": "Security",
+                "slug": "security"
+            }
+        ]
+    }
+} 

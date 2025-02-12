@@ -1,0 +1,74 @@
+{
+    "getting-started": {
+        "title": "Getting Started",
+        "children": [
+            {
+                "title": "Introduction",
+                "slug": "index"
+            },
+            {
+                "title": "Setup Environment",
+                "slug": "setup"
+            },
+            {
+                "title": "Developer Account",
+                "slug": "account"
+            }
+        ]
+    },
+    "plugin-development": {
+        "title": "Plugin Development",
+        "children": [
+            {
+                "title": "Plugin Structure",
+                "slug": "structure"
+            },
+            {
+                "title": "Configuration",
+                "slug": "configuration"
+            },
+            {
+                "title": "Plugin API",
+                "slug": "api"
+            },
+            {
+                "title": "Hooks System",
+                "slug": "hooks"
+            }
+        ]
+    },
+    "guidelines": {
+        "title": "Guidelines",
+        "children": [
+            {
+                "title": "Code Standards",
+                "slug": "code-standards"
+            },
+            {
+                "title": "Security",
+                "slug": "security"
+            },
+            {
+                "title": "Performance",
+                "slug": "performance"
+            }
+        ]
+    },
+    "deployment": {
+        "title": "Deployment",
+        "children": [
+            {
+                "title": "Testing",
+                "slug": "testing"
+            },
+            {
+                "title": "Submission",
+                "slug": "submission"
+            },
+            {
+                "title": "Publishing",
+                "slug": "publishing"
+            }
+        ]
+    }
+} 
