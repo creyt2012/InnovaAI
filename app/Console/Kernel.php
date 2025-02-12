@@ -34,6 +34,18 @@ class Kernel extends ConsoleKernel
         $schedule->call(function () {
             app(BackupServerService::class)->monitor();
         })->everyFiveMinutes();
+
+        // Daily cleanup
+        $schedule->command('analytics:cleanup')->daily();
+
+        // Daily report
+        $schedule->command('analytics:report daily')->dailyAt('08:00');
+
+        // Weekly report
+        $schedule->command('analytics:report weekly')->weekly()->mondays()->at('08:00');
+
+        // Monthly report
+        $schedule->command('analytics:report monthly')->monthly()->at('08:00');
     }
 
     /**

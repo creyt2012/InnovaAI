@@ -1,12 +1,26 @@
 <template>
-  <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-xl">
-    <div v-if="$slots.header" class="px-6 py-4 border-b dark:border-gray-700">
+  <div 
+    class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
+    :class="[
+      hover && 'transition-shadow duration-200 hover:shadow-md',
+      className
+    ]"
+  >
+    <div 
+      v-if="$slots.header"
+      class="px-6 py-4 border-b dark:border-gray-700"
+    >
       <slot name="header" />
     </div>
+
     <div class="p-6">
       <slot />
     </div>
-    <div v-if="$slots.footer" class="px-6 py-4 border-t dark:border-gray-700">
+
+    <div
+      v-if="$slots.footer" 
+      class="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t dark:border-gray-700"
+    >
       <slot name="footer" />
     </div>
   </div>

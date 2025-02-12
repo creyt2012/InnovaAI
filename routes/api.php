@@ -10,6 +10,15 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\BankAccountController;
 use App\Http\Controllers\Admin\TransactionController;
+use App\Http\Controllers\AnalyticsController;
+
+/**
+ * @OA\Info(
+ *     title="Analytics API",
+ *     version="1.0.0",
+ *     description="API documentation for analytics features"
+ * )
+ */
 
 Route::middleware('auth:sanctum')->group(function () {
     // Chat routes
@@ -69,4 +78,17 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
 // Public package routes
-Route::get('packages', [PackageController::class, 'getActivePackages']); 
+Route::get('packages', [PackageController::class, 'getActivePackages']);
+
+Route::middleware(['auth:sanctum', 'analytics.ratelimit'])->group(function () {
+    /**
+     * @OA\Get(
+     *     path="/api/analytics/stats",
+     *     summary="Get analytics statistics",
+     *     tags={"Analytics"},
+     *     @OA\Response(response="200", description="Success"),
+     *     @OA\Response(response="429", description="Too Many Requests")
+     * )
+     */
+    Route::get('/analytics/stats', [AnalyticsController::class, 'stats']);
+}); 

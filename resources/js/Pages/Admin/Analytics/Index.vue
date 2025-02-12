@@ -1,172 +1,97 @@
 <template>
-  <AdminLayout>
-    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <!-- Filters -->
-      <div class="bg-white shadow rounded-lg mb-6">
-        <div class="p-6">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label>Date Range</Label>
-              <DateRangePicker
-                v-model="filters.dateRange"
-                class="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label>User Group</Label>
-              <Select
-                v-model="filters.userGroup"
-                :options="userGroups"
-                class="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label>Feature</Label>
-              <Select
-                v-model="filters.feature"
-                :options="features"
-                class="mt-1"
-              />
-            </div>
-
-            <div class="flex items-end">
-              <Button @click="applyFilters">
-                Apply Filters
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Usage Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+  <DashboardLayout>
+    <div class="space-y-6">
+      <!-- Stats Overview -->
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
-          title="Total Users"
-          :value="stats.totalUsers"
-          :change="stats.userGrowth"
-          icon="UserGroupIcon"
-        />
-        
-        <StatsCard
-          title="Active Users"
-          :value="stats.activeUsers"
-          :change="stats.activeUserGrowth"
-          icon="UserCircleIcon"
-        />
-        
-        <StatsCard
-          title="Total Queries"
-          :value="stats.totalQueries"
-          :change="stats.queryGrowth"
-          icon="ChatBubbleLeftIcon"
+          v-for="stat in stats"
+          :key="stat.name"
+          v-bind="stat"
         />
       </div>
 
       <!-- Charts -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div class="bg-white shadow rounded-lg p-6">
-          <h3 class="text-lg font-medium mb-4">User Growth</h3>
-          <LineChart
-            :data="charts.userGrowth"
-            :options="chartOptions.userGrowth"
-          />
-        </div>
-
-        <div class="bg-white shadow rounded-lg p-6">
-          <h3 class="text-lg font-medium mb-4">Feature Usage</h3>
-          <BarChart
-            :data="charts.featureUsage"
-            :options="chartOptions.featureUsage"
-          />
-        </div>
-      </div>
-
-      <!-- User Behavior -->
-      <div class="bg-white shadow rounded-lg p-6 mb-6">
-        <h3 class="text-lg font-medium mb-4">User Behavior Analysis</h3>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div>
-            <h4 class="text-sm font-medium text-gray-500">Avg. Session Duration</h4>
-            <p class="text-2xl font-semibold">{{ formatDuration(behavior.avgSessionDuration) }}</p>
-          </div>
-          
-          <div>
-            <h4 class="text-sm font-medium text-gray-500">Bounce Rate</h4>
-            <p class="text-2xl font-semibold">{{ behavior.bounceRate }}%</p>
-          </div>
-          
-          <div>
-            <h4 class="text-sm font-medium text-gray-500">Queries per Session</h4>
-            <p class="text-2xl font-semibold">{{ behavior.queriesPerSession }}</p>
-          </div>
-          
-          <div>
-            <h4 class="text-sm font-medium text-gray-500">Return Rate</h4>
-            <p class="text-2xl font-semibold">{{ behavior.returnRate }}%</p>
-          </div>
-        </div>
-
-        <div class="mt-6">
-          <h4 class="text-sm font-medium text-gray-500 mb-2">Popular User Paths</h4>
-          <div class="space-y-2">
-            <div v-for="path in behavior.popularPaths" :key="path.id"
-                 class="flex items-center justify-between">
-              <div class="flex-1">
-                <div class="text-sm font-medium">{{ path.sequence }}</div>
-                <div class="text-xs text-gray-500">{{ path.count }} users</div>
-              </div>
-              <div class="text-sm text-gray-500">
-                {{ path.conversion_rate }}% conversion
-              </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium">Visitors Over Time</h3>
+              <DateRangePicker v-model="dateRange" />
             </div>
-          </div>
-        </div>
+          </template>
+
+          <VisitorsChart 
+            :data="chartData.visitors"
+            :loading="loading"
+          />
+        </Card>
+
+        <Card>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium">Traffic Sources</h3>
+              <SegmentedControl v-model="period" :options="periodOptions" />
+            </div>
+          </template>
+
+          <TrafficSourcesChart 
+            :data="chartData.sources"
+            :loading="loading"
+          />
+        </Card>
       </div>
 
-      <!-- Retention Analysis -->
-      <div class="bg-white shadow rounded-lg p-6">
-        <h3 class="text-lg font-medium mb-4">User Retention</h3>
-        
-        <div class="overflow-x-auto">
-          <table class="min-w-full">
-            <thead>
-              <tr>
-                <th class="text-left">Cohort</th>
-                <th v-for="week in 8" :key="week" class="text-center">
-                  Week {{ week }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="cohort in retention.cohorts" :key="cohort.date">
-                <td class="font-medium">
-                  {{ formatDate(cohort.date) }}
-                  <span class="text-sm text-gray-500">
-                    ({{ cohort.size }} users)
-                  </span>
-                </td>
-                <td v-for="(rate, week) in cohort.retention" :key="week"
-                    class="text-center"
-                    :class="getRetentionColor(rate)">
-                  {{ rate }}%
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <!-- Detailed Stats -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card>
+          <template #header>
+            <h3 class="text-lg font-medium">Top Pages</h3>
+          </template>
+
+          <TopPagesTable 
+            :pages="topPages"
+            :loading="loading"
+          />
+        </Card>
+
+        <Card>
+          <template #header>
+            <h3 class="text-lg font-medium">Visitor Demographics</h3>
+          </template>
+
+          <DemographicsChart 
+            :data="demographics"
+            :loading="loading"
+          />
+        </Card>
+
+        <Card>
+          <template #header>
+            <h3 class="text-lg font-medium">Device Distribution</h3>
+          </template>
+
+          <DevicesChart 
+            :data="devices"
+            :loading="loading"
+          />
+        </Card>
       </div>
     </div>
-  </AdminLayout>
+  </DashboardLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import AdminLayout from '@/Layouts/AdminLayout.vue'
-import { Line as LineChart, Bar as BarChart } from 'vue-chartjs'
-import { formatDate, formatDuration } from '@/utils/format'
+import DashboardLayout from '@/Layouts/DashboardLayout.vue'
+import StatsCard from '@/Components/StatsCard.vue'
+import Card from '@/Components/UI/Card.vue'
+import DateRangePicker from '@/Components/DateRangePicker.vue'
+import SegmentedControl from '@/Components/SegmentedControl.vue'
+import VisitorsChart from '@/Components/Analytics/VisitorsChart.vue'
+import TrafficSourcesChart from '@/Components/Analytics/TrafficSourcesChart.vue'
+import TopPagesTable from '@/Components/Analytics/TopPagesTable.vue'
+import DemographicsChart from '@/Components/Analytics/DemographicsChart.vue'
+import DevicesChart from '@/Components/Analytics/DevicesChart.vue'
 
 const filters = ref({
   dateRange: null,

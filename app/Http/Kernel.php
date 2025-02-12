@@ -38,5 +38,6 @@ class Kernel extends HttpKernel
      */
     protected $routeMiddleware = [
         // ...
+        'analytics.ratelimit' => \App\Http\Middleware\AnalyticsRateLimiter::class,
     ];
 } 

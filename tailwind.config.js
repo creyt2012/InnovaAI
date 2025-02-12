@@ -1,22 +1,22 @@
 /** @type {import('tailwindcss').Config} */
 const colors = require('tailwindcss/colors')
+const defaultTheme = require('tailwindcss/defaultTheme')
 
-export default {
-    content: [
-        './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
-        './storage/framework/views/*.php',
-        './resources/views/**/*.blade.php',
-        './resources/js/**/*.vue',
-    ],
+module.exports = {
     darkMode: 'class',
+    content: [
+        './resources/**/*.blade.php',
+        './resources/**/*.js',
+        './resources/**/*.vue',
+    ],
     theme: {
         extend: {
             colors: {
                 primary: colors.indigo,
-                success: colors.green,
-                warning: colors.yellow,
-                error: colors.red,
-                info: colors.blue,
+                success: colors.emerald,
+                warning: colors.amber,
+                error: colors.rose,
+                info: colors.sky,
                 surface: {
                     50: '#fafafa',
                     100: '#f4f4f5',
@@ -31,7 +31,7 @@ export default {
                 },
             },
             fontFamily: {
-                sans: ['Inter var', 'sans-serif'],
+                sans: ['Inter var', ...defaultTheme.fontFamily.sans],
             },
             spacing: {
                 '128': '32rem',
