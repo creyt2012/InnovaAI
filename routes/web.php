@@ -14,6 +14,11 @@ use App\Http\Controllers\Admin\AdminLogController;
 use App\Http\Controllers\Admin\AdminBankAccountController;
 use App\Http\Controllers\Admin\AdminTransactionController;
 use App\Http\Controllers\Admin\AdminAnalyticsController;
+use App\Http\Controllers\Admin\LMStudioNodeController;
+use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\UserPreferenceController;
+use App\Http\Controllers\Admin\LandingPageController;
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', function () {
@@ -39,13 +44,25 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('servers/{server}/test', [ServerController::class, 'test'])
         ->name('servers.test');
 
-    Route::get('/settings', [AdminSettingController::class, 'index'])->name('admin.settings');
+    Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::post('/settings/logo', [SettingController::class, 'updateLogo'])->name('settings.logo');
+    Route::post('/settings/ai-model', [SettingController::class, 'updateAIModel'])->name('settings.ai-model');
+
     Route::get('/models', [AdminModelController::class, 'index'])->name('admin.models');
     Route::get('/servers', [AdminServerController::class, 'index'])->name('admin.servers');
     Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users');
     Route::get('/bank-accounts', [AdminBankAccountController::class, 'index'])->name('bank-accounts.index');
     Route::get('/transactions', [AdminTransactionController::class, 'index'])->name('transactions.index');
     Route::get('/analytics', [AdminAnalyticsController::class, 'index'])->name('analytics.index');
+
+    Route::resource('lmstudio/nodes', LMStudioNodeController::class);
+    Route::post('lmstudio/nodes/{node}/test', [LMStudioNodeController::class, 'test'])
+        ->name('lmstudio.nodes.test');
+
+    Route::get('/landing-page', [LandingPageController::class, 'edit'])
+        ->name('landing-page.edit');
+    Route::put('/landing-page', [LandingPageController::class, 'update'])
+        ->name('landing-page.update');
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -54,6 +71,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
     Route::post('/chat/{conversation}/message', [ChatController::class, 'message'])->name('chat.message');
     Route::delete('/chat/{conversation}', [ChatController::class, 'destroy'])->name('chat.destroy');
+
+    // User preferences
+    Route::get('/preferences', [UserPreferenceController::class, 'show']);
+    Route::post('/preferences', [UserPreferenceController::class, 'update']);
+    
+    // Chat exports
+    Route::post('/chat/{chat}/export', [ChatController::class, 'export']);
+    Route::get('/exports/{filename}', [ChatController::class, 'downloadExport']);
 });
 
 Route::get('language/{locale}', [LanguageController::class, 'switch'])

@@ -7,6 +7,8 @@ use App\Models\QueryLog;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Rap2hpoutre\FastExcel\FastExcel;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class LogController extends Controller
 {
@@ -23,9 +25,13 @@ class LogController extends Controller
                 $query->whereBetween('created_at', $dateRange);
             });
 
+        $logs = $query->latest()->paginate(15);
+        $errors = $this->getLatestErrors();
+
         return Inertia::render('Admin/Logs/Index', [
-            'logs' => $query->latest()->paginate(15),
+            'logs' => $logs,
             'filters' => $request->only(['search', 'status', 'date_range']),
+            'errors' => $errors,
         ]);
     }
 
@@ -48,5 +54,21 @@ class LogController extends Controller
                 'Created At' => $log->created_at->format('Y-m-d H:i:s'),
             ];
         });
+    }
+
+    public function exportLogs()
+    {
+        $logs = Storage::get('logs/laravel.log');
+        return response()->download(
+            storage_path('logs/laravel.log'),
+            'application-logs.log'
+        );
+    }
+
+    private function getLatestErrors()
+    {
+        // Implement the logic to get the latest errors
+        // This is a placeholder and should be replaced with the actual implementation
+        return [];
     }
 } 

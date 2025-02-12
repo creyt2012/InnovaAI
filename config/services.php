@@ -16,5 +16,13 @@ return [
 
     'lmstudio' => [
         'url' => env('LMSTUDIO_API_URL'),
+        'endpoints' => [
+            env('LMSTUDIO_API_URL'),
+            env('LMSTUDIO_API_URL_2'),
+            env('LMSTUDIO_API_URL_3'),
+        ],
+        'temperature' => env('LMSTUDIO_TEMPERATURE', 0.7),
+        'max_tokens' => env('LMSTUDIO_MAX_TOKENS', 1000),
+        'timeout' => env('LMSTUDIO_TIMEOUT', 30),
     ],
 ]; 

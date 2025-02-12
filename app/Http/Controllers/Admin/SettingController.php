@@ -12,10 +12,7 @@ class SettingController extends Controller
     public function index()
     {
         $settings = Setting::pluck('value', 'key')->toArray();
-        
-        return response()->json([
-            'settings' => $settings
-        ]);
+        return view('admin.settings.index', compact('settings'));
     }
 
     public function update(Request $request)
@@ -45,6 +42,56 @@ class SettingController extends Controller
             'message' => 'Settings updated successfully',
             'settings' => Setting::pluck('value', 'key')->toArray()
         ]);
+    }
+
+    public function updateLogo(Request $request)
+    {
+        $request->validate([
+            'logo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $path = $file->store('public/logo');
+            Setting::updateOrCreate(
+                ['key' => 'site_logo'],
+                ['value' => Storage::url($path)]
+            );
+        }
+
+        return back()->with('success', 'Logo đã được cập nhật');
+    }
+
+    public function updateAIModel(Request $request)
+    {
+        $request->validate([
+            'default_model' => 'required|string',
+            'temperature' => 'required|numeric|between:0,1',
+            'max_tokens' => 'required|integer|min:1',
+            'system_prompt' => 'nullable|string|max:1000'
+        ]);
+
+        Setting::updateOrCreate(
+            ['key' => 'default_ai_model'],
+            ['value' => $request->default_model]
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'ai_temperature'],
+            ['value' => $request->temperature]
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'ai_max_tokens'],
+            ['value' => $request->max_tokens]
+        );
+
+        Setting::updateOrCreate(
+            ['key' => 'system_prompt'],
+            ['value' => $request->system_prompt]
+        );
+
+        return back()->with('success', 'Cấu hình AI đã được cập nhật');
     }
 
     private function updateSetting($key, $value)
