@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\LmStudioApi;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Http;
 
 class LmStudioApiController extends Controller
@@ -13,14 +12,12 @@ class LmStudioApiController extends Controller
     public function index()
     {
         $apis = LmStudioApi::latest()->paginate(10);
-        return Inertia::render('Admin/LmStudioApis/Index', [
-            'apis' => $apis
-        ]);
+        return view('admin.apis.index', compact('apis'));
     }
 
     public function create()
     {
-        return Inertia::render('Admin/LmStudioApis/Create');
+        return view('admin.apis.create');
     }
 
     public function store(Request $request)
@@ -29,34 +26,24 @@ class LmStudioApiController extends Controller
             'name' => 'required|string|max:255',
             'endpoint' => 'required|url',
             'api_key' => 'required|string',
-            'configuration' => 'nullable|array',
-            'is_active' => 'boolean'
+            'model' => 'required|string',
+            'max_tokens' => 'required|integer|min:1',
+            'temperature' => 'required|numeric|between:0,2',
+            'status' => 'required|in:active,inactive',
+            'priority' => 'required|integer|min:0',
+            'rate_limit' => 'required|integer|min:1',
+            'timeout' => 'required|integer|min:1',
         ]);
-
-        // Test connection before saving
-        try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $validated['api_key']
-            ])->get($validated['endpoint'] . '/v1/models');
-
-            if (!$response->successful()) {
-                return back()->withErrors(['endpoint' => 'Could not connect to API endpoint']);
-            }
-        } catch (\Exception $e) {
-            return back()->withErrors(['endpoint' => 'Connection error: ' . $e->getMessage()]);
-        }
 
         LmStudioApi::create($validated);
 
         return redirect()->route('admin.apis.index')
-            ->with('success', 'API added successfully');
+            ->with('success', 'API endpoint added successfully');
     }
 
     public function edit(LmStudioApi $api)
     {
-        return Inertia::render('Admin/LmStudioApis/Edit', [
-            'api' => $api
-        ]);
+        return view('admin.apis.edit', compact('api'));
     }
 
     public function update(Request $request, LmStudioApi $api)
@@ -65,60 +52,68 @@ class LmStudioApiController extends Controller
             'name' => 'required|string|max:255',
             'endpoint' => 'required|url',
             'api_key' => 'required|string',
-            'configuration' => 'nullable|array',
-            'is_active' => 'boolean'
+            'model' => 'required|string',
+            'max_tokens' => 'required|integer|min:1',
+            'temperature' => 'required|numeric|between:0,2',
+            'status' => 'required|in:active,inactive',
+            'priority' => 'required|integer|min:0',
+            'rate_limit' => 'required|integer|min:1',
+            'timeout' => 'required|integer|min:1',
         ]);
-
-        // Test connection before updating
-        try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $validated['api_key']
-            ])->get($validated['endpoint'] . '/v1/models');
-
-            if (!$response->successful()) {
-                return back()->withErrors(['endpoint' => 'Could not connect to API endpoint']);
-            }
-        } catch (\Exception $e) {
-            return back()->withErrors(['endpoint' => 'Connection error: ' . $e->getMessage()]);
-        }
 
         $api->update($validated);
 
         return redirect()->route('admin.apis.index')
-            ->with('success', 'API updated successfully');
-    }
-
-    public function destroy(LmStudioApi $api)
-    {
-        $api->delete();
-        return back()->with('success', 'API deleted successfully');
+            ->with('success', 'API endpoint updated successfully');
     }
 
     public function testConnection(LmStudioApi $api)
     {
         try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $api->api_key
-            ])->get($api->endpoint . '/v1/models');
+            $response = Http::timeout($api->timeout)
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $api->api_key,
+                    'Content-Type' => 'application/json',
+                ])
+                ->post($api->endpoint, [
+                    'model' => $api->model,
+                    'messages' => [
+                        ['role' => 'user', 'content' => 'Test connection']
+                    ],
+                    'max_tokens' => 10,
+                    'temperature' => 0.7,
+                ]);
 
             if ($response->successful()) {
-                $models = $response->json();
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Connection successful',
-                    'models' => $models
+                $api->update([
+                    'last_check' => now(),
+                    'status' => 'active'
                 ]);
+                return response()->json(['success' => true, 'message' => 'Connection successful']);
             }
 
             return response()->json([
-                'status' => 'error',
-                'message' => 'Could not connect to API'
+                'success' => false, 
+                'message' => 'Connection failed: ' . $response->body()
             ], 400);
+
         } catch (\Exception $e) {
+            $api->update([
+                'last_check' => now(),
+                'status' => 'inactive'
+            ]);
+            
             return response()->json([
-                'status' => 'error',
-                'message' => 'Connection error: ' . $e->getMessage()
+                'success' => false,
+                'message' => 'Connection failed: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function destroy(LmStudioApi $api)
+    {
+        $api->delete();
+        return redirect()->route('admin.apis.index')
+            ->with('success', 'API endpoint deleted successfully');
     }
 } 

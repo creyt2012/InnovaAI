@@ -10,12 +10,37 @@ class LmStudioApi extends Model
         'name',
         'endpoint',
         'api_key',
-        'configuration',
-        'is_active'
+        'model',
+        'max_tokens',
+        'temperature',
+        'status',
+        'priority',
+        'rate_limit',
+        'timeout',
+        'last_check',
     ];
 
     protected $casts = [
-        'configuration' => 'array',
-        'is_active' => 'boolean'
+        'last_check' => 'datetime',
+        'max_tokens' => 'integer',
+        'temperature' => 'float',
+        'priority' => 'integer',
+        'rate_limit' => 'integer',
+        'timeout' => 'integer',
     ];
+
+    public function isActive()
+    {
+        return $this->status === 'active';
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopePrioritized($query)
+    {
+        return $query->orderBy('priority', 'desc');
+    }
 } 
