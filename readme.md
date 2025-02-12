@@ -41,7 +41,7 @@ LM Studio Manager là một giao diện web hiện đại cho LM Studio, cho ph�
 
 bash
 Clone repository
-git clone https://github.com/your-username/lm-studio-manager.git
+git clone https://github.com/creyt2012/InnovaAI.git
 cd lm-studio-manager
 Cấp quyền thực thi cho script cài đặt
 chmod +x init.sh
