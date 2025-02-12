@@ -19,6 +19,12 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\UserPreferenceController;
 use App\Http\Controllers\Admin\LandingPageController;
+use App\Http\Controllers\PluginController;
+use App\Http\Controllers\Admin\PluginManagementController;
+use App\Http\Controllers\Admin\PluginDevelopmentController;
+use App\Http\Controllers\Developer\DashboardController;
+use App\Http\Controllers\Developer\ProfileController;
+use App\Http\Controllers\DocumentationController;
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', function () {
@@ -63,6 +69,28 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         ->name('landing-page.edit');
     Route::put('/landing-page', [LandingPageController::class, 'update'])
         ->name('landing-page.update');
+
+    // Plugin Management Routes
+    Route::get('/plugins', [PluginManagementController::class, 'index'])
+        ->name('plugins.index');
+    Route::put('/plugins/{plugin}/status', [PluginManagementController::class, 'updateStatus'])
+        ->name('plugins.status');
+    Route::put('/plugins/{plugin}/settings', [PluginManagementController::class, 'updateSettings'])
+        ->name('plugins.settings');
+    Route::get('/plugins/{plugin}/analytics', [PluginManagementController::class, 'analytics'])
+        ->name('plugins.analytics');
+    Route::put('/plugins/{plugin}/permissions', [PluginManagementController::class, 'permissions'])
+        ->name('plugins.permissions');
+
+    // Plugin Development Routes
+    Route::get('/plugins/development', [PluginDevelopmentController::class, 'index'])
+        ->name('plugins.development.index');
+    Route::post('/plugins/development/create', [PluginDevelopmentController::class, 'create'])
+        ->name('plugins.development.create');
+    Route::post('/plugins/development/upload', [PluginDevelopmentController::class, 'upload'])
+        ->name('plugins.development.upload');
+    Route::get('/plugins/development/documentation', [PluginDevelopmentController::class, 'documentation'])
+        ->name('plugins.development.documentation');
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -79,6 +107,12 @@ Route::middleware(['auth'])->group(function () {
     // Chat exports
     Route::post('/chat/{chat}/export', [ChatController::class, 'export']);
     Route::get('/exports/{filename}', [ChatController::class, 'downloadExport']);
+
+    // Plugin routes
+    Route::get('/plugins', [PluginController::class, 'index'])->name('plugins.index');
+    Route::post('/plugins/{plugin}/install', [PluginController::class, 'install'])->name('plugins.install');
+    Route::delete('/plugins/{plugin}/uninstall', [PluginController::class, 'uninstall'])->name('plugins.uninstall');
+    Route::put('/plugins/{plugin}/configure', [PluginController::class, 'configure'])->name('plugins.configure');
 });
 
 Route::get('language/{locale}', [LanguageController::class, 'switch'])
@@ -92,4 +126,25 @@ Route::middleware(['documentation.auth'])->group(function () {
     Route::get('/docs', function () {
         return redirect('/docs/index.html');
     })->name('api.docs');
+});
+
+// Developer Routes
+Route::middleware(['auth', 'verified', 'developer'])->prefix('developer')->name('developer.')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    
+    // Plugin Management
+    Route::resource('plugins', PluginController::class);
+    Route::get('plugins/{plugin}/analytics', [PluginController::class, 'analytics'])
+        ->name('plugins.analytics');
+    
+    // Profile Management
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+});
+
+// Documentation Routes
+Route::prefix('docs')->name('docs.')->group(function () {
+    Route::get('/', [DocumentationController::class, 'index'])->name('index');
+    Route::get('/search', [DocumentationController::class, 'search'])->name('search');
+    Route::get('/{section}/{page?}', [DocumentationController::class, 'show'])->name('show');
 }); 
