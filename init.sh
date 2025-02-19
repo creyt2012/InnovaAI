@@ -4,17 +4,17 @@
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${BLUE}Starting InnovaAI installation on aaPanel...${NC}"
+echo -e "${GREEN}Starting InnovaAI installation...${NC}"
 
 # Get current directory
 CURRENT_DIR=$(pwd)
 
 # Check if running inside aaPanel
 if [ ! -f "/www/server/panel/class/panelSite.py" ]; then
-    echo -e "${RED}Error: This script must be run on aaPanel${NC}"
-    exit 1
+    echo -e "${YELLOW}Warning: Running without aaPanel${NC}"
 fi
 
 # Check PHP version
@@ -38,121 +38,121 @@ if ! [ -x "$(command -v npm)" ]; then
     bt install nodejs
 fi
 
-# Create .env file if not exists
+# Check if .env exists, if not create from example
 if [ ! -f ".env" ]; then
-    echo "Creating .env file..."
+    echo -e "${YELLOW}Creating .env file...${NC}"
     cp .env.example .env
 fi
 
-# Install PHP dependencies
-echo -e "${GREEN}Installing PHP dependencies...${NC}"
-composer install
-
-# Install Node dependencies
-echo -e "${GREEN}Installing Node dependencies...${NC}"
-npm install
-npm install --save-dev vite
+# Install composer dependencies
+echo -e "${GREEN}Installing Composer dependencies...${NC}"
+composer install --no-interaction --prefer-dist --optimize-autoloader
 
 # Generate application key
 echo -e "${GREEN}Generating application key...${NC}"
 php artisan key:generate
 
-# Create storage link
+# Clear all caches
+echo -e "${GREEN}Clearing caches...${NC}"
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
+php artisan route:clear
+
+# Run database migrations
+echo -e "${GREEN}Running database migrations...${NC}"
+php artisan migrate --force
+
+# Run seeders
+echo -e "${GREEN}Running database seeders...${NC}"
+php artisan db:seed --class=SystemConfigSeeder
+php artisan db:seed --class=RolesAndPermissionsSeeder
+php artisan db:seed --class=AdminUserSeeder
+
+# Install and compile npm dependencies
+echo -e "${GREEN}Installing NPM dependencies...${NC}"
+npm install
+npm run build
+
+# Set up storage link
 echo -e "${GREEN}Creating storage link...${NC}"
 php artisan storage:link
 
-# Set up database
-echo -e "${GREEN}Setting up database...${NC}"
-read -p "Enter database name (default: innovaai): " dbname
-dbname=${dbname:-innovaai}
-
-read -p "Enter database user (default: root): " dbuser
-dbuser=${dbuser:-root}
-
-read -s -p "Enter database password: " dbpass
-echo
-
-# Update .env file with database credentials
-sed -i "s/DB_DATABASE=.*/DB_DATABASE=$dbname/" .env
-sed -i "s/DB_USERNAME=.*/DB_USERNAME=$dbuser/" .env
-sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$dbpass/" .env
-
-# Create database if not exists
-mysql -u$dbuser -p$dbpass -e "CREATE DATABASE IF NOT EXISTS $dbname CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-
-# Run migrations
-echo -e "${GREEN}Running migrations...${NC}"
-php artisan migrate
-
-# Run seeders
-echo -e "${GREEN}Running seeders...${NC}"
-php artisan db:seed --force
-
-# Build assets
-echo -e "${GREEN}Building assets...${NC}"
-npm run build
-
-# Set permissions
-echo -e "${GREEN}Setting permissions...${NC}"
-chown -R www:www $CURRENT_DIR
-chmod -R 755 $CURRENT_DIR
-chmod -R 777 $CURRENT_DIR/storage
-chmod -R 777 $CURRENT_DIR/bootstrap/cache
-
-# Install and configure Redis
+# Set up Redis
 echo -e "${GREEN}Setting up Redis...${NC}"
-if ! [ -x "$(command -v redis-server)" ]; then
-    bt install redis
+service redis-server start || service redis start
+
+# Thêm kiểm tra Redis
+if ! command -v redis-cli &> /dev/null; then
+    echo -e "${YELLOW}Installing Redis...${NC}"
+    apt-get update && apt-get install -y redis-server
 fi
 
-# Install and configure Supervisor through aaPanel
-echo -e "${GREEN}Setting up Process Manager...${NC}"
-bt install supervisor
+# Set proper permissions
+echo -e "${GREEN}Setting file permissions...${NC}"
+chmod -R 775 storage bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
 
-# Create Supervisor configuration for queue worker
-cat > /www/server/panel/plugin/supervisor/profile/innovaai-worker.conf << EOF
+# Set up supervisor for queue workers
+echo -e "${GREEN}Setting up Supervisor...${NC}"
+if [ -f "/etc/supervisor/conf.d/innovaai-worker.conf" ]; then
+    supervisorctl reread
+    supervisorctl update
+    supervisorctl restart all
+else
+    cat > /etc/supervisor/conf.d/innovaai-worker.conf << EOF
 [program:innovaai-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=php $CURRENT_DIR/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
-directory=$CURRENT_DIR
+command=php ${CURRENT_DIR}/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
 autostart=true
 autorestart=true
 stopasgroup=true
 killasgroup=true
-user=www
-numprocs=8
+user=www-data
+numprocs=2
 redirect_stderr=true
-stdout_logfile=$CURRENT_DIR/storage/logs/worker.log
+stdout_logfile=/var/www/html/storage/logs/worker.log
 stopwaitsecs=3600
 EOF
+    supervisorctl reread
+    supervisorctl update
+    supervisorctl start all
+fi
 
-# Reload Supervisor
-supervisorctl reload
+# Thêm kiểm tra Supervisor
+if ! command -v supervisord &> /dev/null; then
+    echo -e "${YELLOW}Installing Supervisor...${NC}"
+    apt-get update && apt-get install -y supervisor
+fi
 
-# Configure PHP settings
-echo -e "${GREEN}Configuring PHP settings...${NC}"
-bt php set_session 1800
-bt php set_max_execution_time 300
-bt php set_max_input_vars 3000
-bt php set_memory_limit 256M
-bt php set_upload_max_filesize 64M
-bt php set_post_max_size 64M
+# Set up cron job for scheduled tasks
+echo -e "${GREEN}Setting up Cron job...${NC}"
+(crontab -l 2>/dev/null; echo "* * * * * cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1") | crontab -
 
-# Optimize Laravel
-echo -e "${GREEN}Optimizing Laravel...${NC}"
+# Optimize
+echo -e "${GREEN}Optimizing application...${NC}"
+php artisan optimize
+php artisan view:cache
 php artisan config:cache
 php artisan route:cache
-php artisan view:cache
 
-# Start Laravel Horizon
-echo -e "${GREEN}Starting Laravel Horizon...${NC}"
-php artisan horizon
+# Start/Restart services
+echo -e "${GREEN}Restarting services...${NC}"
+service nginx restart || systemctl restart nginx
+service php8.1-fpm restart || systemctl restart php8.1-fpm
+service redis-server restart || service redis restart
+supervisorctl reload
 
-echo -e "${GREEN}Installation completed!${NC}"
-echo -e "Please set up your site in aaPanel and point it to: ${BLUE}$CURRENT_DIR/public${NC}"
-echo -e "Admin credentials:"
-echo -e "Email: ${BLUE}admin@example.com${NC}"
-echo -e "Password: ${BLUE}password${NC}"
+echo -e "${GREEN}Installation completed successfully!${NC}"
+echo -e "${YELLOW}Please check the documentation for next steps and configuration options.${NC}"
+
+# Display useful information
+echo -e "\n${GREEN}Useful commands:${NC}"
+echo -e "- View logs: tail -f storage/logs/laravel.log"
+echo -e "- Monitor queues: php artisan horizon"
+echo -e "- View system config: php artisan system:config list"
+echo -e "- Update system config: php artisan system:config set key value"
+echo -e "- Clear all caches: php artisan optimize:clear"
 
 # Add cron job for Laravel scheduler
 echo -e "${GREEN}Adding cron job for Laravel scheduler...${NC}"

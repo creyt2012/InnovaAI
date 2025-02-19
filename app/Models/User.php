@@ -25,4 +25,14 @@ class User extends Model
     {
         return $this->belongsTo(AiModel::class, 'preferred_model_id');
     }
+
+    public function securityLogs()
+    {
+        return $this->hasMany(SecurityLog::class);
+    }
+
+    public function notifications()
+    {
+        return $this->morphMany(Notification::class, 'notifiable');
+    }
 } 

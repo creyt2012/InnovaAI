@@ -26,6 +26,7 @@ class Kernel extends HttpKernel
         'web' => [
             // ...
             \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\CheckMaintenanceMode::class,
         ],
     ];
 
@@ -39,5 +40,6 @@ class Kernel extends HttpKernel
     protected $routeMiddleware = [
         // ...
         'analytics.ratelimit' => \App\Http\Middleware\AnalyticsRateLimiter::class,
+        'admin' => \App\Http\Middleware\AdminMiddleware::class,
     ];
 } 

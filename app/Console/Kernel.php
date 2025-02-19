@@ -46,6 +46,10 @@ class Kernel extends ConsoleKernel
 
         // Monthly report
         $schedule->command('analytics:report monthly')->monthly()->at('08:00');
+
+        $schedule->command('system:config backup')->daily();
+        $schedule->command('security:scan')->hourly();
+        $schedule->command('notifications:cleanup')->daily();
     }
 
     /**

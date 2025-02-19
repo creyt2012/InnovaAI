@@ -12,14 +12,14 @@ class KnowledgeBase extends Model
     protected $fillable = [
         'title',
         'content',
-        'category_id',
-        'tags',
-        'status',
-        'author_id'
+        'source_type',
+        'source_url',
+        'metadata'
     ];
 
     protected $casts = [
-        'tags' => 'array'
+        'metadata' => 'array',
+        'last_trained_at' => 'datetime'
     ];
 
     public function category()
@@ -39,5 +39,10 @@ class KnowledgeBase extends Model
             'content' => $this->content,
             'tags' => $this->tags
         ];
+    }
+
+    public function train()
+    {
+        // Implement training logic
     }
 } 
