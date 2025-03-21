@@ -33,6 +33,13 @@
 
 ### Cài đặt trên aaPanel
 
+<<<<<<< HEAD
+bash
+Clone repository
+git clone https://github.com/creyt2012/InnovaAI.git
+cd lm-studio-manager
+Cấp quyền thực thi cho script cài đặt
+=======
 Thực hiện các bước sau để cài đặt trên aaPanel:
 
 ```bash
@@ -41,6 +48,7 @@ git clone https://github.com/creyt2012/InnovaAI.git
 cd InnovaAI
 
 # Cấp quyền thực thi cho script cài đặt
+>>>>>>> f481ccf (Giải quyết xung đột trong file LICENSE)
 chmod +x init.sh
 
 # Chạy script cài đặt
@@ -137,6 +145,9 @@ services:
 
 ---
 
+<<<<<<< HEAD
+<p align="center">Made with ❤️ by Your Team</p>
+=======
 ## 💻 [Hướng dẫn sử dụng](#-hướng-dẫn-sử-dụng)
 
 - Truy cập vào [http://localhost:8000](http://localhost:8000).
@@ -246,3 +257,4 @@ Dự án đã sẵn sàng tích hợp với LM Studio API! 🚀
 ![GitHub All Releases](https://img.shields.io/github/downloads/creyt2012/InnovaAI/total)
 
 
+>>>>>>> f481ccf (Giải quyết xung đột trong file LICENSE)

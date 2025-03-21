@@ -7,9 +7,6 @@ use Illuminate\Support\Facades\Http;
 use Jenssegers\Agent\Agent;
 use Illuminate\Support\Facades\Cache;
 use App\Models\VisitorSession;
-use App\Events\UserEvent;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\AnalyticsExport;
 
 class VisitorTrackingService
 {
@@ -180,47 +177,5 @@ class VisitorTrackingService
     protected function getActiveVisitors()
     {
         return VisitorAnalytic::where('visited_at', '>=', now()->subMinutes(5))->count();
-    }
-
-    public function getHeatmapData($pageUrl, $dateRange)
-    {
-        $query = VisitorAnalytic::where('page_url', $pageUrl);
-        
-        switch ($dateRange) {
-            case 'today':
-                $query->whereDate('visited_at', today());
-                break;
-            case 'week':
-                $query->whereBetween('visited_at', [now()->startOfWeek(), now()->endOfWeek()]);
-                break;
-            case 'month':
-                $query->whereMonth('visited_at', now()->month);
-                break;
-        }
-
-        return $query->get(['click_data', 'scroll_depth']);
-    }
-
-    public function getUserPaths()
-    {
-        return VisitorSession::select('pages_visited')
-            ->whereNotNull('pages_visited')
-            ->orderBy('visited_at', 'desc')
-            ->limit(100)
-            ->get()
-            ->map(function ($session) {
-                return [
-                    'path' => json_decode($session->pages_visited),
-                    'duration' => $session->duration
-                ];
-            });
-    }
-
-    public function exportData($filters)
-    {
-        return Excel::download(
-            new AnalyticsExport($filters),
-            'analytics-' . now()->format('Y-m-d') . '.xlsx'
-        );
     }
 } 
