@@ -256,4 +256,4 @@ Dự án đã sẵn sàng tích hợp với LM Studio API! 🚀
 ![GitHub All Releases](https://img.shields.io/github/downloads/creyt2012/InnovaAI/total)
 
 
->>>>>>> f481ccf (Giải quyết xung đột trong file LICENSE)
+
