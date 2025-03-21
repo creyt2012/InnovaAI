@@ -8,10 +8,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Message extends Model
 {
-    protected $fillable = ['conversation_id', 'role', 'content', 'metadata'];
+    protected $fillable = [
+        'conversation_id',
+        'user_id',
+        'content',
+        'role',
+        'tokens'
+    ];
 
     protected $casts = [
-        'metadata' => 'array',
+        'tokens' => 'integer'
     ];
 
     protected $with = ['attachments']; // Eager load attachments
@@ -24,5 +30,10 @@ class Message extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(Attachment::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 } 

@@ -6,10 +6,16 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${BLUE}Starting InnovaAI installation on aaPanel...${NC}"
+echo -e "${BLUE}Starting InnovaAI installation...${NC}"
 
 # Get current directory
 CURRENT_DIR=$(pwd)
+
+# Check if running as root
+if [ "$EUID" -ne 0 ]; then 
+    echo -e "${RED}Error: This script must be run as root${NC}"
+    exit 1
+fi
 
 # Check if running inside aaPanel
 if [ ! -f "/www/server/panel/class/panelSite.py" ]; then
@@ -24,189 +30,96 @@ if [ $(echo "$PHP_VERSION < 8.1" | bc) -eq 1 ]; then
     exit 1
 fi
 
-# Install Composer if not installed
+# Install required PHP extensions
+echo -e "${GREEN}Installing PHP extensions...${NC}"
+apt-get update
+apt-get install -y \
+    php${PHP_VERSION}-cli \
+    php${PHP_VERSION}-common \
+    php${PHP_VERSION}-curl \
+    php${PHP_VERSION}-json \
+    php${PHP_VERSION}-mbstring \
+    php${PHP_VERSION}-mysql \
+    php${PHP_VERSION}-xml \
+    php${PHP_VERSION}-zip \
+    php${PHP_VERSION}-redis \
+    php${PHP_VERSION}-gd \
+    php${PHP_VERSION}-bcmath \
+    php${PHP_VERSION}-intl \
+    php${PHP_VERSION}-opcache
+
+# Install/Update Composer
+echo -e "${GREEN}Installing Composer...${NC}"
 if ! [ -x "$(command -v composer)" ]; then
-    echo -e "${GREEN}Installing Composer...${NC}"
-    curl -sS https://getcomposer.org/installer | php
-    mv composer.phar /usr/local/bin/composer
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+    php -r "unlink('composer-setup.php');"
 fi
 
-# Install Node.js and npm if not installed
-if ! [ -x "$(command -v npm)" ]; then
-    echo -e "${GREEN}Installing Node.js and npm...${NC}"
-    curl -sL https://rpm.nodesource.com/setup_18.x | bash -
-    bt install nodejs
-fi
+# Install project dependencies
+echo -e "${GREEN}Installing project dependencies...${NC}"
+composer install --no-interaction --optimize-autoloader
 
-# Create .env file if not exists
+# Set up environment file
+echo -e "${GREEN}Setting up environment file...${NC}"
 if [ ! -f ".env" ]; then
-    echo "Creating .env file..."
     cp .env.example .env
+    php artisan key:generate
 fi
 
-# Install PHP dependencies
-echo -e "${GREEN}Installing PHP dependencies...${NC}"
-composer install
-
-# Install Node dependencies
-echo -e "${GREEN}Installing Node dependencies...${NC}"
-npm install
-npm install --save-dev vite
-
-# Generate application key
-echo -e "${GREEN}Generating application key...${NC}"
-php artisan key:generate
-
-# Create storage link
-echo -e "${GREEN}Creating storage link...${NC}"
+# Set up storage directory
+echo -e "${GREEN}Setting up storage directory...${NC}"
+chmod -R 775 storage bootstrap/cache
+chown -R www:www storage bootstrap/cache
 php artisan storage:link
 
 # Set up database
 echo -e "${GREEN}Setting up database...${NC}"
-read -p "Enter database name (default: innovaai): " dbname
-dbname=${dbname:-innovaai}
-
-read -p "Enter database user (default: root): " dbuser
-dbuser=${dbuser:-root}
-
-read -s -p "Enter database password: " dbpass
-echo
-
-# Update .env file with database credentials
-sed -i "s/DB_DATABASE=.*/DB_DATABASE=$dbname/" .env
-sed -i "s/DB_USERNAME=.*/DB_USERNAME=$dbuser/" .env
-sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$dbpass/" .env
+php artisan migrate --force
 
 # Create database if not exists
-mysql -u$dbuser -p$dbpass -e "CREATE DATABASE IF NOT EXISTS $dbname CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-
-# Run migrations
-echo -e "${GREEN}Running migrations...${NC}"
-php artisan migrate
-
-# Run seeders
-echo -e "${GREEN}Running seeders...${NC}"
-php artisan db:seed --force
-
-# Build assets
-echo -e "${GREEN}Building assets...${NC}"
-npm run build
-
-# Set permissions
-echo -e "${GREEN}Setting permissions...${NC}"
-chown -R www:www $CURRENT_DIR
-chmod -R 755 $CURRENT_DIR
-chmod -R 777 $CURRENT_DIR/storage
-chmod -R 777 $CURRENT_DIR/bootstrap/cache
-
-# Install and configure Redis
-echo -e "${GREEN}Setting up Redis...${NC}"
-if ! [ -x "$(command -v redis-server)" ]; then
-    bt install redis
+DB_NAME=$(grep DB_DATABASE .env | cut -d '=' -f2)
+if [ ! -z "$DB_NAME" ]; then
+    mysql -e "CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 fi
-
-# Install and configure Supervisor through aaPanel
-echo -e "${GREEN}Setting up Process Manager...${NC}"
-bt install supervisor
-
-# Create Supervisor configuration for queue worker
-cat > /www/server/panel/plugin/supervisor/profile/innovaai-worker.conf << EOF
-[program:innovaai-worker]
-process_name=%(program_name)s_%(process_num)02d
-command=php $CURRENT_DIR/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
-directory=$CURRENT_DIR
-autostart=true
-autorestart=true
-stopasgroup=true
-killasgroup=true
-user=www
-numprocs=8
-redirect_stderr=true
-stdout_logfile=$CURRENT_DIR/storage/logs/worker.log
-stopwaitsecs=3600
-EOF
-
-# Reload Supervisor
-supervisorctl reload
-
-# Configure PHP settings
-echo -e "${GREEN}Configuring PHP settings...${NC}"
-bt php set_session 1800
-bt php set_max_execution_time 300
-bt php set_max_input_vars 3000
-bt php set_memory_limit 256M
-bt php set_upload_max_filesize 64M
-bt php set_post_max_size 64M
 
 # Optimize Laravel
 echo -e "${GREEN}Optimizing Laravel...${NC}"
+php artisan optimize
+php artisan view:cache
 php artisan config:cache
 php artisan route:cache
-php artisan view:cache
 
-# Start Laravel Horizon
-echo -e "${GREEN}Starting Laravel Horizon...${NC}"
-php artisan horizon
+# Setup Redis
+echo -e "${GREEN}Setting up Redis...${NC}"
+if ! [ -x "$(command -v redis-cli)" ]; then
+    apt-get install -y redis-server
+    systemctl enable redis-server
+    systemctl start redis-server
+fi
 
-echo -e "${GREEN}Installation completed!${NC}"
-echo -e "Please set up your site in aaPanel and point it to: ${BLUE}$CURRENT_DIR/public${NC}"
-echo -e "Admin credentials:"
-echo -e "Email: ${BLUE}admin@example.com${NC}"
-echo -e "Password: ${BLUE}password${NC}"
-
-# Add cron job for Laravel scheduler
-echo -e "${GREEN}Adding cron job for Laravel scheduler...${NC}"
-(crontab -l 2>/dev/null; echo "* * * * * php $CURRENT_DIR/artisan schedule:run >> /dev/null 2>&1") | crontab -
-
-echo -e "${BLUE}Important:${NC}"
-echo -e "1. Set up a new website in aaPanel"
-echo -e "2. Point the document root to: $CURRENT_DIR/public"
-echo -e "3. Configure SSL if needed"
-echo -e "4. Add the following to your Nginx configuration:"
-echo -e "${GREEN}"
-cat << 'EOF'
-location / {
-    try_files $uri $uri/ /index.php?$query_string;
-}
-EOF
-echo -e "${NC}"
-
-# Install models directory
-mkdir -p storage/app/models
-chmod -R 775 storage/app/models
-chown -R www-data:www-data storage/app/models
-
-echo "Installation completed!"
-
-# Optimize PHP-FPM
-echo -e "${GREEN}Optimizing PHP-FPM...${NC}"
-cat > /www/server/php/$PHP_VERSION/etc/php-fpm.conf.d/www.conf << EOF
-pm = dynamic
-pm.max_children = 50
-pm.start_servers = 5
-pm.min_spare_servers = 5
-pm.max_spare_servers = 35
-pm.max_requests = 500
+# Configure PHP
+echo -e "${GREEN}Configuring PHP...${NC}"
+cat > /www/server/php/${PHP_VERSION}/etc/php.ini << EOF
+memory_limit = 256M
+max_execution_time = 300
+max_input_time = 300
+post_max_size = 50M
+upload_max_filesize = 50M
+date.timezone = Asia/Ho_Chi_Minh
 EOF
 
-# Optimize MySQL
-echo -e "${GREEN}Optimizing MySQL...${NC}"
-cat > /www/server/mysql/my.cnf << EOF
-[mysqld]
-innodb_buffer_pool_size = 1G
-innodb_log_file_size = 256M
-innodb_flush_log_at_trx_commit = 2
-innodb_flush_method = O_DIRECT
-max_connections = 1000
+# Configure PHP security settings
+cat >> /www/server/php/${PHP_VERSION}/etc/php.ini << EOF
+expose_php = Off
+session.cookie_httponly = 1
+session.cookie_secure = 1
+session.use_strict_mode = 1
 EOF
 
-# Setup monitoring cron jobs
-echo -e "${GREEN}Setting up monitoring...${NC}"
-(crontab -l 2>/dev/null; echo "*/5 * * * * php $CURRENT_DIR/artisan metrics:collect >> /dev/null 2>&1") | crontab -
-
-# Enable OPcache
-echo -e "${GREEN}Enabling OPcache...${NC}"
-cat > /www/server/php/$PHP_VERSION/etc/php.d/10-opcache.ini << EOF
+# Configure OPcache
+echo -e "${GREEN}Configuring OPcache...${NC}"
+cat > /www/server/php/${PHP_VERSION}/etc/php.d/10-opcache.ini << EOF
 zend_extension=opcache.so
 opcache.enable=1
 opcache.memory_consumption=128
@@ -217,8 +130,131 @@ opcache.fast_shutdown=1
 opcache.enable_cli=1
 EOF
 
+# Configure MySQL
+echo -e "${GREEN}Configuring MySQL...${NC}"
+cat > /www/server/mysql/my.cnf << EOF
+[mysqld]
+innodb_buffer_pool_size = 1G
+innodb_log_buffer_size = 16M
+innodb_file_per_table = 1
+innodb_open_files = 400
+innodb_io_capacity = 400
+innodb_flush_method = O_DIRECT
+innodb_log_file_size = 256M
+innodb_flush_log_at_trx_commit = 2
+max_connections = 500
+key_buffer_size = 256M
+table_open_cache = 400
+sort_buffer_size = 4M
+read_buffer_size = 4M
+read_rnd_buffer_size = 8M
+myisam_sort_buffer_size = 64M
+thread_cache_size = 8
+query_cache_size = 64M
+EOF
+
+# Setup monitoring cron jobs
+echo -e "${GREEN}Setting up monitoring...${NC}"
+(crontab -l 2>/dev/null; echo "*/5 * * * * php $CURRENT_DIR/artisan schedule:run >> /dev/null 2>&1") | crontab -
+
+# Setup Supervisor for queue workers
+echo -e "${GREEN}Setting up Supervisor...${NC}"
+if ! [ -x "$(command -v supervisord)" ]; then
+    apt-get install -y supervisor
+fi
+
+cat > /etc/supervisor/conf.d/laravel-worker.conf << EOF
+[program:laravel-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php ${CURRENT_DIR}/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www
+numprocs=2
+redirect_stderr=true
+stdout_logfile=${CURRENT_DIR}/storage/logs/worker.log
+stopwaitsecs=3600
+EOF
+
+supervisorctl reread
+supervisorctl update
+supervisorctl start all
+
 # Restart services
-service php-fpm restart
-service mysql restart
-service redis restart
-supervisorctl reload 
+echo -e "${GREEN}Restarting services...${NC}"
+systemctl restart php${PHP_VERSION}-fpm
+systemctl restart mysql
+systemctl restart redis-server
+systemctl restart supervisor
+
+echo -e "${GREEN}Installation completed successfully!${NC}"
+echo -e "${BLUE}Please check the documentation for next steps.${NC}"
+
+# Display useful information
+echo -e "\n${GREEN}Useful commands:${NC}"
+echo "- View Laravel logs: tail -f ${CURRENT_DIR}/storage/logs/laravel.log"
+echo "- View worker logs: tail -f ${CURRENT_DIR}/storage/logs/worker.log"
+echo "- Restart queue workers: supervisorctl restart all"
+echo "- Clear cache: php artisan optimize:clear"
+
+# Backup configurations
+echo -e "${GREEN}Backing up configurations...${NC}"
+timestamp=$(date +%Y%m%d_%H%M%S)
+[ -f /www/server/php/${PHP_VERSION}/etc/php.ini ] && cp /www/server/php/${PHP_VERSION}/etc/php.ini /www/server/php/${PHP_VERSION}/etc/php.ini.${timestamp}
+[ -f /www/server/mysql/my.cnf ] && cp /www/server/mysql/my.cnf /www/server/mysql/my.cnf.${timestamp}
+
+# Install required tools
+echo -e "${GREEN}Installing required tools...${NC}"
+apt-get install -y \
+    git \
+    unzip \
+    curl \
+    bc \
+    supervisor 
+
+# Test database connection
+echo -e "${GREEN}Testing database connection...${NC}"
+if ! mysql -e "SELECT 1"; then
+    echo -e "${RED}Error: Could not connect to MySQL${NC}"
+    exit 1
+fi
+
+# Configure Redis security
+echo -e "${GREEN}Configuring Redis security...${NC}"
+cat > /etc/redis/redis.conf << EOF
+bind 127.0.0.1
+protected-mode yes
+port 6379
+tcp-backlog 511
+timeout 0
+tcp-keepalive 300
+daemonize yes
+supervised no
+EOF
+
+# Function to check command status
+check_status() {
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Error: $1 failed${NC}"
+        exit 1
+    fi
+}
+
+# Use the function
+php artisan migrate --force
+check_status "Database migration"
+
+composer install --no-interaction --optimize-autoloader
+check_status "Composer installation"
+
+# Cleanup
+echo -e "${GREEN}Cleaning up...${NC}"
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+
+echo -e "\n${BLUE}SSL Configuration:${NC}"
+echo "1. Generate SSL certificate using aaPanel"
+echo "2. Enable HTTPS in your site configuration"
+echo "3. Update .env APP_URL to use https://" 

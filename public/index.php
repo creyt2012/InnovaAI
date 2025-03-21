@@ -5,6 +5,11 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
+// Check if vendor directory exists
+if (!is_dir(__DIR__.'/../vendor')) {
+    die('Please run "composer install" first');
+}
+
 /*
 |--------------------------------------------------------------------------
 | Check If The Application Is Under Maintenance

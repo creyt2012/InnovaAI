@@ -9,20 +9,34 @@ use Illuminate\Support\Facades\Http;
 class AiModel extends Model
 {
     protected $fillable = [
-        'server_id',
         'name',
-        'path',
-        'description',
-        'category',
-        'parameters',
-        'context_length',
-        'is_active'
+        'endpoint',
+        'api_key',
+        'type', // openai, lmstudio, etc
+        'status', // active, inactive
+        'priority',
+        'max_tokens',
+        'temperature',
+        'context_length'
     ];
 
     protected $casts = [
-        'parameters' => 'array',
-        'is_active' => 'boolean'
+        'status' => 'boolean',
+        'priority' => 'integer',
+        'max_tokens' => 'integer',
+        'temperature' => 'float',
+        'context_length' => 'integer'
     ];
+
+    public function users()
+    {
+        return $this->hasMany(User::class, 'preferred_model_id');
+    }
+
+    public function isAvailable()
+    {
+        return $this->status === 'active';
+    }
 
     public function server(): BelongsTo
     {
@@ -31,7 +45,7 @@ class AiModel extends Model
 
     public function getStatus(): string 
     {
-        if (!$this->is_active) {
+        if (!$this->status) {
             return 'offline';
         }
 
