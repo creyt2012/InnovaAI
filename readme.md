@@ -32,11 +32,10 @@
 - LM Studio (đã cài đặt và chạy)
 
 ### Cài đặt trên aaPanel
-
-<<<<<<< HEAD
 bash
 Clone repository
-git clone https://github.com/creyt2012/InnovaAI.git
+```git clone https://github.com/creyt2012/InnovaAI.git
+```
 cd lm-studio-manager
 Cấp quyền thực thi cho script cài đặt
 =======
