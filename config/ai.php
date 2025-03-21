@@ -7,6 +7,7 @@ return [
     'model' => env('AI_MODEL', 'gpt-3.5-turbo'),
     'max_tokens' => env('AI_MAX_TOKENS', 2000),
     'temperature' => env('AI_TEMPERATURE', 0.7),
+    'default_system_prompt' => env('AI_DEFAULT_SYSTEM_PROMPT', 'You are a helpful assistant.'),
 
     // Rate Limiting
     'rate_limits' => [

@@ -7,10 +7,14 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use App\Events\UserRegistered;
-use App\Listeners\SendWelcomeEmail;
-use App\Listeners\LogUserLogin;
-use App\Listeners\LogUserLogout;
+use App\Events\ChatMessageSent;
+use App\Events\AIResponseGenerated;
+use App\Events\ConversationCreated;
+use App\Listeners\ProcessAIResponse;
+use App\Listeners\NotifyUser;
+use App\Listeners\SaveAIResponse;
+use App\Listeners\InitializeAIContext;
+use App\Listeners\LogUserActivity;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -23,25 +27,22 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
-        UserRegistered::class => [
-            SendWelcomeEmail::class,
-        ],
         Login::class => [
-            LogUserLogin::class,
+            LogUserActivity::class,
         ],
         Logout::class => [
-            LogUserLogout::class,
+            LogUserActivity::class,
         ],
-        'App\Events\ChatMessageSent' => [
-            'App\Listeners\ProcessAIResponse',
-            'App\Listeners\NotifyUser',
+        ChatMessageSent::class => [
+            ProcessAIResponse::class,
+            NotifyUser::class,
         ],
-        'App\Events\AIResponseGenerated' => [
-            'App\Listeners\SaveAIResponse',
-            'App\Listeners\NotifyUserOfCompletion',
+        AIResponseGenerated::class => [
+            SaveAIResponse::class,
+            NotifyUser::class,
         ],
-        'App\Events\ConversationCreated' => [
-            'App\Listeners\InitializeAIContext',
+        ConversationCreated::class => [
+            InitializeAIContext::class,
         ],
     ];
 

@@ -32,7 +32,7 @@ class Handler extends ExceptionHandler
     ];
 
     /**
-     * A list of the inputs that are never flashed to the session on validation exceptions.
+     * The list of the inputs that are never flashed to the session on validation exceptions.
      *
      * @var array<int, string>
      */
@@ -54,9 +54,28 @@ class Handler extends ExceptionHandler
         });
 
         $this->renderable(function (NotFoundHttpException $e) {
-            return response()->json([
-                'message' => 'Resource not found'
-            ], 404);
+            if (request()->is('api/*')) {
+                return response()->json([
+                    'message' => 'Resource not found'
+                ], 404);
+            }
+        });
+
+        $this->renderable(function (AuthenticationException $e) {
+            if (request()->is('api/*')) {
+                return response()->json([
+                    'message' => 'Unauthenticated'
+                ], 401);
+            }
+        });
+
+        $this->renderable(function (ValidationException $e) {
+            if (request()->is('api/*')) {
+                return response()->json([
+                    'message' => 'The given data was invalid.',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
         });
 
         $this->renderable(function (\App\Exceptions\AIServiceUnavailableException $e) {

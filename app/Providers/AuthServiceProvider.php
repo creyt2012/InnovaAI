@@ -6,6 +6,9 @@ use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvid
 use Illuminate\Support\Facades\Gate;
 use Laravel\Passport\Passport;
 use Carbon\Carbon;
+use App\Models\User;
+use App\Models\Conversation;
+use App\Policies\ConversationPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -15,10 +18,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        'App\Models\Model' => 'App\Policies\ModelPolicy',
-        'App\Models\User' => 'App\Policies\UserPolicy',
-        'App\Models\Conversation' => 'App\Policies\ConversationPolicy',
-        'App\Models\Message' => 'App\Policies\MessagePolicy',
+        Conversation::class => ConversationPolicy::class,
     ];
 
     /**
@@ -28,12 +28,22 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        if (! $this->app->routesAreCached()) {
+        if (!$this->app->routesAreCached()) {
             Passport::routes();
         }
 
+        // Configure Passport tokens
         Passport::tokensExpireIn(Carbon::now()->addDays(15));
         Passport::refreshTokensExpireIn(Carbon::now()->addDays(30));
         Passport::personalAccessTokensExpireIn(Carbon::now()->addMonths(6));
+
+        // Define gates
+        Gate::define('access-admin', function (User $user) {
+            return $user->isAdmin();
+        });
+
+        Gate::define('manage-ai-models', function (User $user) {
+            return $user->isAdmin();
+        });
     }
 } 

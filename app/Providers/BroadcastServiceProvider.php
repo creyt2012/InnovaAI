@@ -16,11 +16,11 @@ class BroadcastServiceProvider extends ServiceProvider
 
         require base_path('routes/channels.php');
 
+        // Define broadcast channels
         Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
             return (int) $user->id === (int) $id;
         });
 
-        // Add AI specific channels
         Broadcast::channel('conversation.{conversationId}', function ($user, $conversationId) {
             return $user->conversations->contains($conversationId);
         });

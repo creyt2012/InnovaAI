@@ -28,6 +28,11 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\CheckMaintenanceMode::class,
         ],
+        'api' => [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ],
     ];
 
     /**
@@ -40,6 +45,9 @@ class Kernel extends HttpKernel
     protected $routeMiddleware = [
         // ...
         'analytics.ratelimit' => \App\Http\Middleware\AnalyticsRateLimiter::class,
+        'auth' => \App\Http\Middleware\Authenticate::class,
+        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        'api_version' => \App\Http\Middleware\ApiVersion::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
     ];
 } 

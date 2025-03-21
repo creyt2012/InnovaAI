@@ -22,7 +22,8 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Configure rate limiting
+        parent::boot();
+
         $this->configureRateLimiting();
 
         $this->routes(function () {
@@ -30,15 +31,6 @@ class RouteServiceProvider extends ServiceProvider
             Route::middleware(['api', 'api_version:v1'])
                 ->prefix('api/v1')
                 ->group(base_path('routes/api_v1.php'));
-
-            Route::middleware(['api', 'api_version:v2'])
-                ->prefix('api/v2')
-                ->group(base_path('routes/api_v2.php'));
-
-            // AI Routes
-            Route::middleware(['api', 'auth:api'])
-                ->prefix('api/ai')
-                ->group(base_path('routes/ai.php'));
 
             // Web Routes
             Route::middleware('web')
@@ -48,6 +40,11 @@ class RouteServiceProvider extends ServiceProvider
             Route::middleware(['web', 'auth', 'admin'])
                 ->prefix('admin')
                 ->group(base_path('routes/admin.php'));
+
+            // AI Chat Routes
+            Route::middleware(['api', 'auth:api'])
+                ->prefix('api/ai')
+                ->group(base_path('routes/ai.php'));
         });
     }
 
@@ -63,6 +60,13 @@ class RouteServiceProvider extends ServiceProvider
                 : Limit::perMinute(30)->by($request->ip());
         });
 
+        // AI chat rate limiting
+        RateLimiter::for('ai_chat', function (Request $request) {
+            return $request->user()
+                ? Limit::perMinute(20)->by($request->user()->id)
+                : Limit::perMinute(5)->by($request->ip());
+        });
+
         // Login rate limiting
         RateLimiter::for('login', function (Request $request) {
             return Limit::perMinute(5)->by($request->ip());
@@ -71,13 +75,6 @@ class RouteServiceProvider extends ServiceProvider
         // Registration rate limiting
         RateLimiter::for('register', function (Request $request) {
             return Limit::perMinute(3)->by($request->ip());
-        });
-
-        // Add AI specific rate limiting
-        RateLimiter::for('ai_requests', function (Request $request) {
-            return $request->user()
-                ? Limit::perMinute(20)->by($request->user()->id)
-                : Limit::perMinute(5)->by($request->ip());
         });
     }
 } 
